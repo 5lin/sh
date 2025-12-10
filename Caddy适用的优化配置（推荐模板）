@@ -1,0 +1,56 @@
+(common_core) {
+    tls internal
+    encode zstd gzip
+    
+    # 统一安全头
+    header {
+        X-Frame-Options DENY
+        X-Content-Type-Options nosniff
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy strict-origin-when-cross-origin
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        -Server
+    }
+}
+
+(proxy_headers) {
+    # 强制将 CF 传递过来的 IP 设为真实 IP
+    header_up X-Real-IP {header.CF-Connecting-IP}
+    header_up X-Forwarded-For {header.CF-Connecting-IP}
+    # 透传 Host，防止后端应用(如OA)因为 Host 不对而报错
+    header_up Host {host}
+}
+
+# =================================================
+# 2. 站点配置 (已修正)
+# =================================================
+
+# 🏢 OA 系统
+# ------------------------------
+oa.example.com {
+    import common_core
+
+    reverse_proxy 127.0.0.1:18111 {
+        import proxy_headers
+    }
+}
+
+# 📧 Webmail 邮箱
+# ------------------------------
+webmail.example.com {
+    import common_core
+
+    reverse_proxy 127.0.0.1:8808 {
+        import proxy_headers
+    }
+}
+
+# 💬 评论系统
+# ------------------------------
+comments.example.com {
+    import common_core
+
+    reverse_proxy 127.0.0.1:8080 {
+        import proxy_headers
+    }
+}
